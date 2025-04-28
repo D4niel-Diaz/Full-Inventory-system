@@ -127,7 +127,8 @@ try {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Inventory Management | Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Management | Admin Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
@@ -152,6 +153,9 @@ try {
         .checkbox-cell {
             width: 40px;
         }
+        .dropdown:hover .dropdown-menu {
+            display: block;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -161,16 +165,25 @@ try {
             <h1 class="text-xl font-bold text-gray-800">Inventory Management System</h1>
         </div>
         <div class="flex items-center space-x-4">
-            <a href="../items/add_item.php" class="flex items-center text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md action-btn">
-                <i class="ri-add-line mr-2"></i> Add Item
-            </a>
-            <a href="../logout.php" class="flex items-center text-white bg-red-500 hover:bg-red-600 px-4 py-2 rounded-md action-btn">
-                <i class="ri-logout-box-r-line mr-2"></i> Logout
-            </a>
+            <div class="dropdown relative">
+                <button class="flex items-center text-gray-700 hover:text-blue-600">
+                    <i class="ri-user-line mr-1"></i>
+                    <?= htmlspecialchars($_SESSION['username'] ?? 'Admin') ?>
+                    <i class="ri-arrow-down-s-line ml-1"></i>
+                </button>
+                <div class="dropdown-menu absolute hidden right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
+                    <a href="../profile/view_profile.php" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                        <i class="ri-user-line mr-2"></i> Profile
+                    </a>
+                    <a href="../logout.php" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                        <i class="ri-logout-box-r-line mr-2"></i> Logout
+                    </a>
+                </div>
+            </div>
         </div>
     </nav>
 
-    <div class="container mx-auto p-6">
+    <div class="container mx-auto p-4 md:p-6">
         <!-- Success/Error Messages -->
         <?php if (isset($_SESSION['success'])): ?>
             <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded">
@@ -206,9 +219,12 @@ try {
             <h2 class="text-2xl font-bold text-gray-800 mb-4 md:mb-0">
                 <i class="ri-list-check-2 mr-2 text-blue-500"></i> Inventory Summary
             </h2>
-            <div class="flex items-center space-x-3">
+            <div class="flex flex-wrap gap-3">
+                <a href="../items/add_item.php" class="flex items-center text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md action-btn">
+                    <i class="ri-add-line mr-2"></i> Add Item
+                </a>
                 <a href="view_transactions.php" class="flex items-center text-white bg-green-600 hover:bg-green-700 px-4 py-2 rounded-md action-btn">
-                    <i class="ri-history-line mr-2"></i> View Transactions
+                    <i class="ri-history-line mr-2"></i> Transactions
                 </a>
             </div>
         </div>
@@ -233,7 +249,7 @@ try {
 
         <!-- Bulk Actions Form - Now wrapping the table -->
         <form id="bulkActionForm" method="post" action="admin_requests.php">
-            <div class="mb-4 flex items-center space-x-4">
+            <div class="mb-4 flex flex-wrap gap-3">
                 <button type="button" id="selectAllBtn" class="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300 transition-colors flex items-center action-btn">
                     <i class="ri-checkbox-line mr-1"></i> Select All
                 </button>
@@ -406,6 +422,15 @@ try {
                 return false;
             }
             return confirm(`Are you sure you want to delete ${checkedBoxes.length} selected item(s)?`);
+        });
+
+        // Dropdown functionality
+        document.querySelector('.dropdown').addEventListener('mouseenter', function() {
+            this.querySelector('.dropdown-menu').classList.remove('hidden');
+        });
+
+        document.querySelector('.dropdown').addEventListener('mouseleave', function() {
+            this.querySelector('.dropdown-menu').classList.add('hidden');
         });
     </script>
 </body>

@@ -49,7 +49,7 @@ try {
         throw new Exception("You can't return more than you've borrowed");
     }
 
-    // Update item quantities
+    // Update item quantities in the inventory
     $update = $conn->prepare("UPDATE items SET available_quantity = available_quantity + ? WHERE id = ?");
     $update->execute([$quantity, $item_id]);
 
@@ -64,7 +64,7 @@ try {
     $stmt->bindValue(3, $quantity, PDO::PARAM_INT);
     $stmt->execute();
 
-    // Record return transaction
+    // Record the return transaction
     $insert = $conn->prepare("INSERT INTO transactions 
         (user_id, item_id, returned_quantity, transaction_date, status) 
         VALUES (?, ?, ?, NOW(), 'Returned')");
