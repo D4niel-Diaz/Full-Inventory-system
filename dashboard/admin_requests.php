@@ -132,6 +132,10 @@ try {
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
+         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
         .table-row:hover {
             background-color: #f9fafb;
         }
@@ -156,32 +160,47 @@ try {
         .dropdown:hover .dropdown-menu {
             display: block;
         }
+        .pagination-link:hover:not(.active) {
+        background-color: #f3f4f6;
+    }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
-    <nav class="bg-white p-4 shadow-md flex justify-between items-center">
-        <div class="flex items-center">
-            <i class="ri-box-2-line text-blue-500 text-2xl mr-2"></i>
-            <h1 class="text-xl font-bold text-gray-800">Inventory Management System</h1>
-        </div>
-        <div class="flex items-center space-x-4">
-            <div class="dropdown relative">
-                <button class="flex items-center text-gray-700 hover:text-blue-600">
-                    <i class="ri-user-line mr-1"></i>
-                    <?= htmlspecialchars($_SESSION['username'] ?? 'Admin') ?>
-                    <i class="ri-arrow-down-s-line ml-1"></i>
-                </button>
-                <div class="dropdown-menu absolute hidden right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
-                    <a href="../profile/view_profile.php" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
-                        <i class="ri-user-line mr-2"></i> Profile
-                    </a>
-                    <a href="../logout.php" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
-                        <i class="ri-logout-box-r-line mr-2"></i> Logout
-                    </a>
+
+    <nav class="bg-white shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 flex items-center">
+                    <i class="ri-box-2-line text-blue-600 text-2xl mr-2"></i>
+                    <span class="text-xl font-semibold text-gray-900">Inventory Management System</span>
+                </div>
+            </div>
+            <div class="hidden sm:ml-6 sm:flex sm:items-center">
+                <div class="ml-3 relative">
+                    <div>
+                        <button id="user-menu" class="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <span class="sr-only">Open user menu</span>
+                            <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                                <i class="ri-user-line"></i>
+                            </div>
+                            <span class="ml-2 text-gray-700"><?= htmlspecialchars($_SESSION['username'] ?? 'Admin') ?></span>
+                            <i class="ri-arrow-down-s-line ml-1 text-gray-500"></i>
+                        </button>
+                    </div>
+                    <div id="user-dropdown" class="hidden origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                        <a href="../profile/view_profile.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="ri-user-line mr-2"></i>Profile
+                        </a>
+                        <a href="../logout.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="ri-logout-box-r-line mr-2"></i>Logout
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
-    </nav>
+    </div>
+</nav>
 
     <div class="container mx-auto p-4 md:p-6">
         <!-- Success/Error Messages -->
@@ -220,10 +239,10 @@ try {
                 <i class="ri-list-check-2 mr-2 text-blue-500"></i> Inventory Summary
             </h2>
             <div class="flex flex-wrap gap-3">
-                <a href="../items/add_item.php" class="flex items-center text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md action-btn">
+                <a href="../items/add_item.php"  class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150">
                     <i class="ri-add-line mr-2"></i> Add Item
                 </a>
-                <a href="view_transactions.php" class="flex items-center text-white bg-green-600 hover:bg-green-700 px-4 py-2 rounded-md action-btn">
+                <a href="view_transactions.php" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-150">
                     <i class="ri-history-line mr-2"></i> Transactions
                 </a>
             </div>
@@ -319,9 +338,8 @@ try {
                                                 </a>
                                                 <span class="text-gray-300">|</span>
                                                 <a href="?action=delete&id=<?= $item['id'] ?>" 
-                                                   class="text-red-600 hover:text-red-900 action-btn"
-                                                   onclick="return confirm('Are you sure you want to delete this item?')"
-                                                   title="Delete Item">
+                                                    class="text-red-600 hover:text-red-900 action-btn delete-btn"
+                                                    title="Delete Item">
                                                     <i class="ri-delete-bin-line text-lg"></i>
                                                 </a>
                                             </div>
@@ -373,65 +391,151 @@ try {
         <?php endif; ?>
     </div>
 
-    <script>
-        // Confirm before deleting
-        document.querySelectorAll('a[onclick]').forEach(link => {
-            link.addEventListener('click', function(e) {
-                if (!confirm('Are you sure you want to delete this item?')) {
-                    e.preventDefault();
-                }
-            });
-        });
+    <div id="delete-modal" class="fixed z-50 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Background overlay -->
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+        
+        <!-- Modal panel -->
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                        <i class="ri-error-warning-fill text-red-600"></i>
+                    </div>
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                            Delete Item
+                        </h3>
+                        <div class="mt-2">
+                            <p class="text-sm text-gray-500 modal-description">
+                                Are you sure you want to delete this item? This action cannot be undone.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" id="confirm-delete" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm">
+                    Delete
+                </button>
+                <button type="button" id="cancel-delete" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
-        // Select/Deselect all functionality
-        document.getElementById('selectAllBtn').addEventListener('click', function() {
-            document.querySelectorAll('.item-checkbox').forEach(checkbox => {
-                checkbox.checked = true;
-            });
-            document.getElementById('selectAllCheckbox').checked = true;
-        });
+<script>
+    // Delete modal functionality
+    const deleteModal = document.getElementById('delete-modal');
+    const confirmDeleteBtn = document.getElementById('confirm-delete');
+    let currentAction = '';
+    let currentForm = null;
 
-        document.getElementById('deselectAllBtn').addEventListener('click', function() {
-            document.querySelectorAll('.item-checkbox').forEach(checkbox => {
-                checkbox.checked = false;
-            });
-            document.getElementById('selectAllCheckbox').checked = false;
-        });
+    // Function to open the modal
+    function openDeleteModal(action, form = null) {
+        currentAction = action;
+        currentForm = form;
+        deleteModal.classList.remove('hidden');
+    }
 
-        document.getElementById('selectAllCheckbox').addEventListener('change', function() {
-            const isChecked = this.checked;
-            document.querySelectorAll('.item-checkbox').forEach(checkbox => {
-                checkbox.checked = isChecked;
-            });
-        });
+    // Function to close the modal
+    function closeDeleteModal() {
+        deleteModal.classList.add('hidden');
+    }
 
-        // Update "select all" checkbox when individual checkboxes change
+    // Confirm delete action
+    confirmDeleteBtn.addEventListener('click', function() {
+        if (currentAction === 'single') {
+            window.location.href = currentDeleteUrl;
+        } else if (currentAction === 'bulk' && currentForm) {
+            currentForm.submit();
+        }
+    });
+
+    // Cancel delete action
+    document.getElementById('cancel-delete').addEventListener('click', closeDeleteModal);
+
+    // Close modal when clicking outside
+    window.addEventListener('click', function(event) {
+        if (event.target === deleteModal) {
+            closeDeleteModal();
+        }
+    });
+
+    // Single item delete
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            openDeleteModal('single', null);
+            currentDeleteUrl = this.getAttribute('href');
+        });
+    });
+
+    // Bulk delete confirmation
+    document.getElementById('bulkActionForm').addEventListener('submit', function(e) {
+        const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+        if (checkedBoxes.length === 0) {
+            e.preventDefault();
+            alert('Please select at least one item to delete.');
+            return false;
+        }
+        
+        e.preventDefault();
+        openDeleteModal('bulk', this);
+        
+        // Update modal text for bulk delete
+        document.querySelector('#delete-modal [id="modal-title"]').textContent = `Delete ${checkedBoxes.length} Item(s)`;
+        document.querySelector('#delete-modal .modal-description').textContent = 
+            `Are you sure you want to delete ${checkedBoxes.length} selected item(s)? This action cannot be undone.`;
+    });
+
+    // Select/Deselect all functionality
+    document.getElementById('selectAllBtn').addEventListener('click', function() {
         document.querySelectorAll('.item-checkbox').forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                const allChecked = Array.from(document.querySelectorAll('.item-checkbox')).every(cb => cb.checked);
-                document.getElementById('selectAllCheckbox').checked = allChecked;
-            });
+            checkbox.checked = true;
         });
+        document.getElementById('selectAllCheckbox').checked = true;
+    });
 
-        // Confirm bulk delete
-        document.getElementById('bulkActionForm').addEventListener('submit', function(e) {
-            const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
-            if (checkedBoxes.length === 0) {
-                e.preventDefault();
-                alert('Please select at least one item to delete.');
-                return false;
-            }
-            return confirm(`Are you sure you want to delete ${checkedBoxes.length} selected item(s)?`);
+    document.getElementById('deselectAllBtn').addEventListener('click', function() {
+        document.querySelectorAll('.item-checkbox').forEach(checkbox => {
+            checkbox.checked = false;
         });
+        document.getElementById('selectAllCheckbox').checked = false;
+    });
 
-        // Dropdown functionality
-        document.querySelector('.dropdown').addEventListener('mouseenter', function() {
-            this.querySelector('.dropdown-menu').classList.remove('hidden');
+    document.getElementById('selectAllCheckbox').addEventListener('change', function() {
+        const isChecked = this.checked;
+        document.querySelectorAll('.item-checkbox').forEach(checkbox => {
+            checkbox.checked = isChecked;
         });
+    });
 
-        document.querySelector('.dropdown').addEventListener('mouseleave', function() {
-            this.querySelector('.dropdown-menu').classList.add('hidden');
+    // Update "select all" checkbox when individual checkboxes change
+    document.querySelectorAll('.item-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const allChecked = Array.from(document.querySelectorAll('.item-checkbox')).every(cb => cb.checked);
+            document.getElementById('selectAllCheckbox').checked = allChecked;
         });
-    </script>
+    });
+
+    // Dropdown functionality
+    const userMenuButton = document.getElementById('user-menu');
+    const userDropdown = document.getElementById('user-dropdown');
+
+    userMenuButton.addEventListener('click', function() {
+        userDropdown.classList.toggle('hidden');
+    });
+
+    // Optional: Hide dropdown when clicking outside
+    window.addEventListener('click', function(e) {
+        if (!userMenuButton.contains(e.target) && !userDropdown.contains(e.target)) {
+            userDropdown.classList.add('hidden');
+        }
+    });
+</script>
 </body>
 </html>

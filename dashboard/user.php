@@ -62,6 +62,10 @@ try {
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
         .table-row:hover {
             background-color: #f9fafb;
         }
@@ -89,30 +93,69 @@ try {
             width: 60px;
             text-align: center;
         }
+        .smooth-transition {
+            transition: all 0.3s ease;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
-    <nav class="bg-white p-4 shadow-md flex justify-between items-center">
-        <div class="flex items-center">
-            <i class="ri-box-2-line text-blue-500 text-2xl mr-2"></i>
-            <h1 class="text-xl font-bold text-gray-800">Inventory Management System</h1>
-        </div>
-        <div class="flex items-center space-x-4">
-            <div class="relative">
-                <button id="dropdownButton" class="flex items-center text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md action-btn">
-                    <i class="ri-user-line mr-2"></i> User Menu
-                </button>
-                <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
-                    <a href="../profile/view_profile.php" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
-                        <i class="ri-user-settings-line mr-2"></i> Profile
-                    </a>
-                    <a href="../logout.php" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
-                        <i class="ri-logout-box-r-line mr-2"></i> Logout
-                    </a>
+    
+<nav class="bg-white shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 flex items-center">
+                    <span class="text-xl font-semibold text-gray-900">Inventory Management System</span>
+                </div>
+            </div>
+            <div class="hidden sm:ml-6 sm:flex sm:items-center">
+                <div class="ml-3 relative">
+                    <!-- User Dropdown Button -->
+                    <div>
+                        <button id="dropdownButton" class="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <span class="sr-only">Open user menu</span>
+                            <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                                <i class="ri-user-line"></i>
+                            </div>
+                            <span class="ml-2 text-gray-700">
+                                <?php 
+                                // Display first name if available, otherwise "User"
+                                echo isset($_SESSION['first_name']) ? htmlspecialchars($_SESSION['first_name']) : 'User';
+                                ?>
+                            </span>
+                            <i class="ri-arrow-down-s-line ml-1 text-gray-500"></i>
+                        </button>
+                    </div>
+                    <!-- Dropdown Menu -->
+                    <div id="user-dropdown" class="hidden origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                        <div class="px-4 py-2 border-b">
+                            <p class="text-sm font-medium text-gray-900">
+                                <?php 
+                                // Display full name if available
+                                if (isset($_SESSION['first_name']) && isset($_SESSION['last_name'])) {
+                                    echo htmlspecialchars($_SESSION['first_name'] . ' ' . $_SESSION['last_name']);
+                                } else {
+                                    echo 'User Account';
+                                }
+                                ?>
+                            </p>
+                            <p class="text-xs text-gray-500">
+                                <?= isset($_SESSION['user_type']) ? htmlspecialchars(ucfirst($_SESSION['user_type'])) : 'User' ?>
+                            </p>
+                        </div>
+                        <a href="../profile/view_profile.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="ri-user-line mr-2"></i> Profile
+                        </a>
+                        <a href="../logout.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="ri-logout-box-r-line mr-2"></i> Logout
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
-    </nav>
+    </div>
+</nav>
+
 
     <div class="container mx-auto p-6">
         <!-- Success/Error Messages -->
@@ -150,11 +193,6 @@ try {
             <h2 class="text-2xl font-bold text-gray-800 mb-4 md:mb-0">
                 <i class="ri-list-check-2 mr-2 text-blue-500"></i> Available Items
             </h2>
-            <div class="flex items-center space-x-3">
-                <a href="view_borrowed_items.php" class="flex items-center text-white bg-green-600 hover:bg-green-700 px-4 py-2 rounded-md action-btn">
-                    <i class="ri-history-line mr-2"></i> My Borrowed Items
-                </a>
-            </div>
         </div>
 
         <!-- Category Filter -->
@@ -315,7 +353,8 @@ try {
     <script>
         // Toggle dropdown
         document.getElementById('dropdownButton').addEventListener('click', function() {
-            document.getElementById('dropdownMenu').classList.toggle('hidden');
+            var menu = document.getElementById('dropdownMenu');
+            menu.classList.toggle('hidden');
         });
 
         // Close dropdown when clicking outside
@@ -351,6 +390,17 @@ try {
                 
                 return true;
             });
+        });
+        document.getElementById('dropdownButton').addEventListener('click', function() {
+            document.getElementById('user-dropdown').classList.toggle('hidden');
+        });
+        
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('user-dropdown');
+            const button = document.getElementById('dropdownButton');
+            if (!button.contains(event.target) && !dropdown.contains(event.target)) {
+                dropdown.classList.add('hidden');
+            }
         });
     </script>
 </body>
