@@ -100,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <!-- Page Header -->
     <div class="mb-8">
-        <h1 class="text-2xl font-bold text-gray-900">Add New Inventory Item</h1>
+        <h1 class="text-2xl font-bold text-gray-900">Add New Item</h1>
         <p class="mt-1 text-sm text-gray-500">Fill in the details below to add a new item to the inventory</p>
     </div>
 
