@@ -23,8 +23,11 @@ if (!$item_id) {
     exit();
 }
 
-// Fetch the item
-$stmt = $conn->prepare("SELECT * FROM items WHERE id = ?");
+// Fetch the item with category information
+$stmt = $conn->prepare("SELECT i.*, mc.name AS main_category 
+                       FROM items i
+                       JOIN main_categories mc ON i.main_category_id = mc.id
+                       WHERE i.id = ?");
 $stmt->execute([$item_id]);
 $item = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -34,23 +37,36 @@ if (!$item) {
     exit();
 }
 
-// Handle Form Submission
+// Handle Form Submission 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = trim($_POST['name']);
-    $category = trim($_POST['category']);
+    $main_category_id = (int)$_POST['main_category_id'];
+    $sub_category = trim($_POST['sub_category']);
     $ched_req = trim($_POST['ched_req']);
     $on_hand = trim($_POST['on_hand']);
     $remarks = trim($_POST['remarks'] ?? '');
+    $unit = trim($_POST['unit'] ?? $item['unit'] ?? 'units');
 
     try {
         $updateStmt = $conn->prepare("UPDATE items SET 
                                     name = ?, 
-                                    category = ?, 
+                                    main_category_id = ?, 
+                                    sub_category = ?, 
                                     quantity = ?, 
                                     available_quantity = ?, 
+                                    unit = ?,
                                     remarks = ? 
                                     WHERE id = ?");
-        $updateStmt->execute([$name, $category, $ched_req, $on_hand, $remarks, $item_id]);
+        $updateStmt->execute([
+            $name, 
+            $main_category_id, 
+            $sub_category, 
+            $ched_req, 
+            $on_hand, 
+            $unit,
+            $remarks, 
+            $item_id
+        ]);
 
         $_SESSION['success'] = "Item updated successfully!";
         header('Location: ../dashboard/admin_requests.php');
@@ -158,11 +174,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                            class="w-full px-4 py-2 border border-gray-300 rounded-lg form-input focus:outline-none">
                 </div>
 
-                <div class="sm:col-span-2">
-                    <label for="category" class="block text-sm font-medium text-gray-700 mb-1">Category *</label>
-                    <input type="text" id="category" name="category" required
-                           value="<?= htmlspecialchars($item['category']) ?>"
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg form-input focus:outline-none">
+                <!-- Main Category Dropdown -->
+                <div>
+                    <label for="main_category_id" class="block text-sm font-medium text-gray-700 mb-1">Main Category *</label>
+                    <select id="main_category_id" name="main_category_id" required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg form-input focus:outline-none">
+                        <option value="">Select a main category</option>
+                        <option value="1" <?= ($item['main_category_id'] ?? '') == 1 ? 'selected' : '' ?>>FRONT OFFICE LABORATORY</option>
+                        <option value="2" <?= ($item['main_category_id'] ?? '') == 2 ? 'selected' : '' ?>>HOUSEKEEPING</option>
+                        <option value="3" <?= ($item['main_category_id'] ?? '') == 3 ? 'selected' : '' ?>>FOOD AND BEVERAGE</option>
+                        <option value="4" <?= ($item['main_category_id'] ?? '') == 4 ? 'selected' : '' ?>>FOOD PRODUCTION</option>
+                    </select>
+                </div>
+
+                <!-- Sub Category Input -->
+                <div>
+                    <label for="sub_category" class="block text-sm font-medium text-gray-700 mb-1">Sub Category *</label>
+                    <input type="text" id="sub_category" name="sub_category" required
+                        value="<?= htmlspecialchars($item['sub_category'] ?? '') ?>"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg form-input focus:outline-none">
                 </div>
 
                 <div>

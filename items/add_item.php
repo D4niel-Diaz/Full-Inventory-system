@@ -9,14 +9,18 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = trim($_POST['name']);
-    $category = trim($_POST['category']);
+    $main_category_id = (int)$_POST['main_category_id'];
+    $sub_category = trim($_POST['sub_category']);
     $ched_req = trim($_POST['ched_req']);
     $on_hand = trim($_POST['on_hand']);
     $remarks = trim($_POST['remarks'] ?? '');
+    $unit = trim($_POST['unit'] ?? 'units'); // Default to 'units' if not specified
 
     try {
-        $stmt = $conn->prepare("INSERT INTO items (name, category, quantity, available_quantity, unit, remarks) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$name, $category, $ched_req, $on_hand, 'unit', $remarks]);
+        $stmt = $conn->prepare("INSERT INTO items 
+                              (name, main_category_id, sub_category, quantity, available_quantity, unit, remarks) 
+                              VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$name, $main_category_id, $sub_category, $ched_req, $on_hand, $unit, $remarks]);
         
         $_SESSION['success'] = "Item added successfully!";
         header('Location: ../dashboard/admin_requests.php');
@@ -135,12 +139,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                            placeholder="Enter item name">
                 </div>
 
-                <!-- Category -->
+                <!-- Main Category Dropdown -->
                 <div>
-                    <label for="category" class="block text-sm font-medium text-gray-700 mb-1">Category *</label>
-                    <input type="text" id="category" name="category" required
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg form-input focus:outline-none focus:ring-2 focus:ring-blue-200"
-                           placeholder="Enter category">
+                <label for="main_category_id" class="block text-sm font-medium text-gray-700 mb-1">Main Category *</label>
+                <select id="main_category_id" name="main_category_id" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg form-input focus:outline-none focus:ring-2 focus:ring-blue-200">
+                    <option value="">Select a main category</option>
+                    <option value="1">FRONT OFFICE LABORATORY</option>
+                    <option value="2">HOUSEKEEPING</option>
+                    <option value="3">FOOD AND BEVERAGE</option>
+                    <option value="4">FOOD PRODUCTION</option>
+                </select>
+                </div>
+                <!-- Sub Category Input -->
+                <div>
+                    <label for="sub_category" class="block text-sm font-medium text-gray-700 mb-1">Sub Category *</label>
+                    <input type="text" id="sub_category" name="sub_category" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg form-input focus:outline-none focus:ring-2 focus:ring-blue-200"
+                        placeholder="Enter sub-category">
                 </div>
 
                 <!-- CHED Requirement -->

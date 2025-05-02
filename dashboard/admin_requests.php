@@ -14,7 +14,8 @@ $pages = 1;
 $limit = 10;
 $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 $start = ($page - 1) * $limit;
-$category_filter = isset($_GET['category']) ? filter_input(INPUT_GET, 'category', FILTER_SANITIZE_STRING) : '';
+$sub_category_filter = isset($_GET['sub_category']) ? filter_input(INPUT_GET, 'sub_category', FILTER_SANITIZE_STRING) : '';
+$main_category_filter = isset($_GET['main_category']) ? filter_input(INPUT_GET, 'main_category', FILTER_SANITIZE_STRING) : '';
 
 // Handle single item deletion
 if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['id'])) {
@@ -53,8 +54,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['id'])
 // Handle bulk deletion
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_delete'])) {
     if (!empty($_POST['selected_items'])) {
-        $selected_items = array_map('intval', $_POST['selected_items']); // Ensure all values are integers
-        $selected_items = array_filter($selected_items); // Remove any empty values
+        $selected_items = array_map('intval', $_POST['selected_items']);
+        $selected_items = array_filter($selected_items);
         $placeholders = implode(',', array_fill(0, count($selected_items), '?'));
         
         try {
@@ -89,33 +90,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_delete'])) {
 }
 
 try {
-    // Get items with pagination and category filter
-    $query = "SELECT id, name AS item, category, 
-                     quantity AS ched_req, 
-                     available_quantity AS on_hand,
-                     remarks, unit
-              FROM items 
-              WHERE (:category_filter = '' OR category = :category_filter)
-              ORDER BY id DESC 
+    // Get items with pagination and filters
+    $query = "SELECT i.id, i.name AS item, mc.name AS main_category, i.sub_category, 
+                     i.quantity AS ched_req, 
+                     i.available_quantity AS on_hand,
+                     i.remarks, i.unit
+              FROM items i
+              JOIN main_categories mc ON i.main_category_id = mc.id
+              WHERE (:main_category_filter = '' OR mc.name = :main_category_filter)
+              AND (:sub_category_filter = '' OR i.sub_category = :sub_category_filter)
+              ORDER BY i.id DESC 
               LIMIT :start, :limit";
     
     $stmt = $conn->prepare($query);
-    $stmt->bindValue(':category_filter', $category_filter, PDO::PARAM_STR);
+    $stmt->bindValue(':main_category_filter', $main_category_filter, PDO::PARAM_STR);
+    $stmt->bindValue(':sub_category_filter', $sub_category_filter, PDO::PARAM_STR);
     $stmt->bindValue(':start', $start, PDO::PARAM_INT);
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
     $stmt->execute();
     $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Get total count for pagination
-    $countStmt = $conn->prepare("SELECT COUNT(*) FROM items WHERE (:category_filter = '' OR category = :category_filter)");
-    $countStmt->bindValue(':category_filter', $category_filter, PDO::PARAM_STR);
+    $countQuery = "SELECT COUNT(*) 
+                   FROM items i
+                   JOIN main_categories mc ON i.main_category_id = mc.id
+                   WHERE (:main_category_filter = '' OR mc.name = :main_category_filter)
+                   AND (:sub_category_filter = '' OR i.sub_category = :sub_category_filter)";
+    
+    $countStmt = $conn->prepare($countQuery);
+    $countStmt->bindValue(':main_category_filter', $main_category_filter, PDO::PARAM_STR);
+    $countStmt->bindValue(':sub_category_filter', $sub_category_filter, PDO::PARAM_STR);
     $countStmt->execute();
     $total = $countStmt->fetchColumn();
     $pages = max(1, ceil($total / $limit));
 
-    // Get all categories for filter
-    $category_stmt = $conn->query("SELECT DISTINCT category FROM items ORDER BY category");
-    $categories = $category_stmt->fetchAll(PDO::FETCH_ASSOC);
+    // Get all main categories for filter
+    $main_categories = $conn->query("SELECT * FROM main_categories ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+
+    // Get all sub-categories for filter
+    $sub_categories = $conn->query("SELECT DISTINCT sub_category FROM items ORDER BY sub_category")->fetchAll(PDO::FETCH_ASSOC);
 
 } catch (PDOException $e) {
     $_SESSION['error'] = "Failed to load items: " . $e->getMessage();
@@ -249,22 +262,44 @@ try {
         </div>
 
         <!-- Category Filter -->
-        <div class="mb-6 bg-white p-4 rounded-lg shadow">
-            <h3 class="text-lg font-medium text-gray-800 mb-3 flex items-center">
-                <i class="ri-filter-line mr-2 text-blue-500"></i> Filter by Category
-            </h3>
-            <div class="flex flex-wrap gap-2">
-                <a href="?category=" class="px-3 py-1 bg-blue-600 text-white rounded-full text-sm hover:bg-blue-700 transition-colors flex items-center action-btn">
-                    <i class="ri-list-unordered mr-1"></i> All Categories
-                </a>
-                <?php foreach ($categories as $category): ?>
-                    <a href="?category=<?= urlencode($category['category']) ?>" 
-                       class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm hover:bg-blue-200 transition-colors flex items-center action-btn">
-                        <i class="ri-price-tag-3-line mr-1"></i> <?= htmlspecialchars($category['category']) ?>
-                    </a>
+        <!-- Category Filter -->
+<div class="mb-6 bg-white p-4 rounded-lg shadow">
+    <h3 class="text-lg font-medium text-gray-800 mb-3 flex items-center">
+        <i class="ri-filter-line mr-2 text-blue-500"></i> Filter by Category
+    </h3>
+    <form method="get" class="flex flex-wrap gap-4 items-end">
+        <div>
+            <label for="main_category" class="block text-sm font-medium text-gray-700 mb-1">Main Category</label>
+            <select id="main_category" name="main_category" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                <option value="">All Main Categories</option>
+                <?php foreach ($main_categories as $cat): ?>
+                    <option value="<?= htmlspecialchars($cat['name']) ?>" <?= $main_category_filter === $cat['name'] ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($cat['name']) ?>
+                    </option>
                 <?php endforeach; ?>
-            </div>
+            </select>
         </div>
+        <div>
+            <label for="sub_category" class="block text-sm font-medium text-gray-700 mb-1">Sub Category</label>
+            <select id="sub_category" name="sub_category" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                <option value="">All Sub Categories</option>
+                <?php foreach ($sub_categories as $sub): ?>
+                    <option value="<?= htmlspecialchars($sub['sub_category']) ?>" <?= $sub_category_filter === $sub['sub_category'] ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($sub['sub_category']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            Apply Filters
+        </button>
+        <?php if ($main_category_filter || $sub_category_filter): ?>
+            <a href="admin_requests.php" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none">
+                Clear Filters
+            </a>
+        <?php endif; ?>
+    </form>
+</div>
 
         <!-- Bulk Actions Form - Now wrapping the table -->
         <form id="bulkActionForm" method="post" action="admin_requests.php">
@@ -311,7 +346,9 @@ try {
                                             </div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="text-sm text-gray-500"><?= htmlspecialchars($item['category']) ?></div>
+                                            <div class="text-sm text-gray-500">
+                                                <?= htmlspecialchars($item['main_category'] . ' - ' . $item['sub_category']) ?>
+                                            </div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
                                             <span class="inline-block px-2 py-1 rounded <?= is_numeric($item['ched_req']) ? 'bg-blue-50 text-blue-800' : 'bg-gray-100 text-gray-800' ?>">
@@ -363,32 +400,33 @@ try {
         </form>
 
         <!-- Pagination -->
-        <?php if ($pages > 1): ?>
-            <div class="mt-6 flex justify-center">
-                <nav class="inline-flex rounded-md shadow-sm -space-x-px">
-                    <?php if ($page > 1): ?>
-                        <a href="?page=<?= $page-1 ?><?= $category_filter ? '&category='.urlencode($category_filter) : '' ?>" 
-                           class="px-3 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 flex items-center action-btn">
-                            <i class="ri-arrow-left-s-line mr-1"></i> Previous
-                        </a>
-                    <?php endif; ?>
+        <!-- Pagination -->
+            <?php if ($pages > 1): ?>
+                <div class="mt-6 flex justify-center">
+                    <nav class="inline-flex rounded-md shadow-sm -space-x-px">
+                        <?php if ($page > 1): ?>
+                            <a href="?page=<?= $page-1 ?><?= $main_category_filter ? '&main_category='.urlencode($main_category_filter) : '' ?><?= $sub_category_filter ? '&sub_category='.urlencode($sub_category_filter) : '' ?>" 
+                            class="px-3 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 flex items-center action-btn">
+                                <i class="ri-arrow-left-s-line mr-1"></i> Previous
+                            </a>
+                        <?php endif; ?>
 
-                    <?php for ($i = 1; $i <= $pages; $i++): ?>
-                        <a href="?page=<?= $i ?><?= $category_filter ? '&category='.urlencode($category_filter) : '' ?>" 
-                           class="<?= $i == $page ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50' ?> px-4 py-2 border text-sm font-medium pagination-link action-btn">
-                            <?= $i ?>
-                        </a>
-                    <?php endfor; ?>
+                        <?php for ($i = 1; $i <= $pages; $i++): ?>
+                            <a href="?page=<?= $i ?><?= $main_category_filter ? '&main_category='.urlencode($main_category_filter) : '' ?><?= $sub_category_filter ? '&sub_category='.urlencode($sub_category_filter) : '' ?>" 
+                            class="<?= $i == $page ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50' ?> px-4 py-2 border text-sm font-medium pagination-link action-btn">
+                                <?= $i ?>
+                            </a>
+                        <?php endfor; ?>
 
-                    <?php if ($page < $pages): ?>
-                        <a href="?page=<?= $page+1 ?><?= $category_filter ? '&category='.urlencode($category_filter) : '' ?>" 
-                           class="px-3 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 flex items-center action-btn">
-                            Next <i class="ri-arrow-right-s-line ml-1"></i>
-                        </a>
-                    <?php endif; ?>
-                </nav>
-            </div>
-        <?php endif; ?>
+                        <?php if ($page < $pages): ?>
+                            <a href="?page=<?= $page+1 ?><?= $main_category_filter ? '&main_category='.urlencode($main_category_filter) : '' ?><?= $sub_category_filter ? '&sub_category='.urlencode($sub_category_filter) : '' ?>" 
+                            class="px-3 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 flex items-center action-btn">
+                                Next <i class="ri-arrow-right-s-line ml-1"></i>
+                            </a>
+                        <?php endif; ?>
+            </nav>
+        </div>
+    <?php endif; ?>
     </div>
 
     <div id="delete-modal" class="fixed z-50 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
